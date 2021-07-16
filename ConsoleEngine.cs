@@ -96,9 +96,14 @@ namespace ConsoleEngine
                 ref region);
         }
 
+        public short GetBufIndex(Coord coord)
+        {
+            return (short)(((short)coord.Y - 1) * Width + (short)coord.X);
+        }
         public short GetBufIndex(short X, short Y)
         {
             return (short)((Y - 1) * Width + X);
         }
+
     }
 }

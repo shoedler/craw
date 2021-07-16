@@ -1,4 +1,5 @@
 ﻿using System;
+using craw;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -10,96 +11,104 @@ namespace ConsoleEngine
         [STAThread]
         static void Main(string[] args)
         {
-            Console.SetWindowSize(100, 50);
-            ConsoleEngine ce = new ConsoleEngine(100, 50);
+            var app = new CrawController();
+            app.ShouldRun = true;
+            app.Run();
+            //short width = (short)(Console.LargestWindowWidth * 0.7);
+            //short height = (short)(Console.LargestWindowHeight * 0.7);
 
-            #region Draw Test
+            //Console.SetWindowSize(width, height);
+            //Console.SetBufferSize(width, height);
+            //ConsoleEngine ce = new ConsoleEngine(width, height);
 
-            CharItem[] canvas = ce.GetEmptyBuf();
-            Rectangle r = null;
+            //#region Draw Test
 
-            Rectangle[] rectangles = new Rectangle[10];
-            int rectangleCounter = 0;
+            //CharItem[] canvas = ce.GetEmptyBuf();
+            //Rectangle r = null;
 
-            bool isDrawing = false;
+            //Rectangle[] rectangles = new Rectangle[10];
+            //int rectangleCounter = 0;
 
-            for (; ; )
-            {
-                var p = Console.GetCursorPosition();
-                Coord cursorPos = new Coord((short)p.Left, (short)p.Top);
+            //bool isDrawing = false;
 
-                if (Console.KeyAvailable)
-                {
-                    ConsoleKeyInfo key = Console.ReadKey(true);
+            //for (; ; )
+            //{
+            //    var p = Console.GetCursorPosition();
+            //    Coord cursorPos = new Coord((short)p.Left, (short)p.Top);
 
-                    switch (key.Key)
-                    {
-                        case ConsoleKey.Enter:
-                            if (!isDrawing)
-                            {
-                                r = new Rectangle(cursorPos);
-                            }
-                            else
-                            {
-                                if (r != null)
-                                    rectangles[rectangleCounter++] = r;
-                            }
-                            isDrawing = !isDrawing;
-                            break;
-                        case ConsoleKey.LeftArrow:
-                            Console.SetCursorPosition(p.Left - 1, p.Top);
-                            break;
-                        case ConsoleKey.RightArrow:
-                            Console.SetCursorPosition(p.Left + 1, p.Top);
-                            break;
-                        case ConsoleKey.DownArrow:
-                            Console.SetCursorPosition(p.Left, p.Top + 1);
-                            break;
-                        case ConsoleKey.UpArrow:
-                            Console.SetCursorPosition(p.Left, p.Top - 1);
-                            break;
-                    }
-                }
+            //    if (Console.KeyAvailable)
+            //    {
+            //        ConsoleKeyInfo key = Console.ReadKey(true);
 
-                canvas = ce.GetEmptyBuf();
+            //        switch (key.Key)
+            //        {
+            //            case ConsoleKey.Enter:
+            //                if (!isDrawing)
+            //                {
+            //                    r = new Rectangle(cursorPos);
+            //                }
+            //                else
+            //                {
+            //                    if (r != null)
+            //                        rectangles[rectangleCounter++] = r;
+            //                }
+            //                isDrawing = !isDrawing;
+            //                break;
+            //            case ConsoleKey.LeftArrow:
+            //                Console.SetCursorPosition(p.Left - 1, p.Top);
+            //                break;
+            //            case ConsoleKey.RightArrow:
+            //                Console.SetCursorPosition(p.Left + 1, p.Top);
+            //                break;
+            //            case ConsoleKey.DownArrow:
+            //                Console.SetCursorPosition(p.Left, p.Top + 1);
+            //                break;
+            //            case ConsoleKey.UpArrow:
+            //                Console.SetCursorPosition(p.Left, p.Top - 1);
+            //                break;
+            //        }
+            //    }
 
-                // Draw currently drawing Rectangle
-                if (isDrawing)
-                {
-                    var cmds = r.Make(cursorPos);
-                    if (cmds != null)
-                    {
-                        for (int i = 0; i < cmds.Length; i++)
-                        {
-                            DrawCommand cmd = cmds[i];
-                            if (cmd != null && !cmd.Empty)
-                            {
-                                short index = ce.GetBufIndex(cmd.Coord.X, cmd.Coord.Y);
-                                canvas[index] = cmd.Data;
-                            }
-                        }
-                    }
-                }
+            //    canvas = ce.GetEmptyBuf();
 
-                // DraW "old" Rectangles
-                for (int i = 0; i < rectangleCounter; i++)
-                {
-                    Rectangle r2 = rectangles[i];
-                    for (int j = 0; j < r2.Blueprint.Length; j++)
-                    {
-                        DrawCommand cmd = r2.Blueprint[j];
-                        if (cmd != null && !cmd.Empty)
-                        {
-                            short index = ce.GetBufIndex(cmd.Coord.X, cmd.Coord.Y);
-                            canvas[index] = cmd.Data;
-                        }
-                    }
-                }
+            //    // Draw currently drawing Rectangle
+            //    if (isDrawing)
+            //    {
+            //        var cmds = r.Make(cursorPos);
+            //        if (cmds != null)
+            //        {
+            //            for (int i = 0; i < cmds.Length; i++)
+            //            {
+            //                DrawCommand cmd = cmds[i];
+            //                if (cmd != null && !cmd.Empty)
+            //                {
+            //                    short index = ce.GetBufIndex(cmd.Coord.X, cmd.Coord.Y);
+            //                    canvas[index] = cmd.Data;
+            //                }
+            //            }
+            //        }
+            //    }
 
-                ce.WriteBuf(canvas);
+            //    // DraW "old" Rectangles
+            //    for (int i = 0; i < rectangleCounter; i++)
+            //    {
+            //        Rectangle r2 = rectangles[i];
+            //        for (int j = 0; j < r2.Blueprint.Length; j++)
+            //        {
+            //            DrawCommand cmd = r2.Blueprint[j];
+            //            if (cmd != null && !cmd.Empty)
+            //            {
+            //                short index = ce.GetBufIndex(cmd.Coord.X, cmd.Coord.Y);
+            //                canvas[index] = cmd.Data;
+            //            }
+            //        }
+            //    }
 
-            }
-            #endregion
+
+            //    ce.WriteBuf(canvas);
+
+            //}
+            //#endregion
         }
     }
 
