@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31129.286
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleEnginge", "ConsoleEnginge.csproj", "{7CBDA1A5-8A16-4D7A-97BC-33F6A22D5F13}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Craw", "Craw.csproj", "{7CBDA1A5-8A16-4D7A-97BC-33F6A22D5F13}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
