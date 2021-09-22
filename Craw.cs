@@ -49,15 +49,19 @@ namespace craw
       // ↕↔←↑→↓∞ ███████████████
 
       // Draw UI Outline
-      frame.InsertString(1, 1, "╔ᴄᴚᴀᴡ══════════════════════════════════════════╗", EConsolePixelColor.White);
-      frame.InsertString(1, 4, "╚══════════════════════════════════════════════╝", EConsolePixelColor.White);
-      frame.InsertString(19, 2, "<Z>: Undo | <U>: Redo", EConsolePixelColor.White);
-      frame.InsertString(19, 3, "<C>: Switch Color", EConsolePixelColor.White);
+      frame.InsertString(1, 1, "╔ᴄᴚᴀᴡ════════════╤═════════════════════════════╗", EConsolePixelColor.White);
+      frame.InsertString(1, 5, "╚══════════════════════════════════════════════╝", EConsolePixelColor.White);
+      frame.InsertString(18, 2, "│ <Z>: Undo | <U>: Redo", EConsolePixelColor.White);
+      frame.InsertString(18, 3, "│ <C>: Switch Color", EConsolePixelColor.White);
+      frame.InsertString(18, 4, "│ <Space>: Begin / End Shape", EConsolePixelColor.White);
+      frame.InsertString(1, 4, "╟────────────────┘", EConsolePixelColor.White);
 
       frame[1, 2].Set('║', EConsolePixelColor.White);
       frame[1, 3].Set('║', EConsolePixelColor.White);
+      frame[1, 4].Set('║', EConsolePixelColor.White);
       frame[48, 2].Set('║', EConsolePixelColor.White);
       frame[48, 3].Set('║', EConsolePixelColor.White);
+      frame[48, 4].Set('╟', EConsolePixelColor.White);
 
       // Draw Color swatches
       for (int i = 0; i < Enum.GetNames(typeof(EConsolePixelColor)).Length; i++)
