@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Threading;
 using ConsoleEngine;
 
 namespace craw
@@ -8,13 +8,14 @@ namespace craw
   class CrawController
   {
     public ConsoleEngine.ConsoleEngine Engine;
-
     public bool ShouldRun = false;
-    private List<Shape> Recipes = new List<Shape>();
-
+    private List<Shape> Shapes = new List<Shape>();
+    private List<Shape> ShapeHistory = new List<Shape>();
     private Coord CursorPos;
-    private char CursorChar = '⌂'; //˟˹
+    private const char CursorChar = '◌'; //˟○◌⌂
+    private const char SelectorChar = '⌂'; //◊∆¯^⌂
     private Shape ActiveShape = null;
+    private EConsolePixelColor ActiveColor = EConsolePixelColor.White;
 
     public CrawController()
     {
@@ -42,30 +43,31 @@ namespace craw
       }
     }
 
-    public List<Pixel> UI()
+    private void PutUI(ref ConsoleFrame frame)
     {
-      //  COMBAK: Active Color Switcher (Key pgup / pgdwn) & display in GUI
-      // ϽЯ∆ꟿ ꞆꞦѦꟿ ₡ƦȺШ ᴄᴚᴀᴡ
-      //"ϽЯᴧ₡₳∆ꞦꟿꭗףּɄШΔѦȺƦ",
-      //"↕↔←↑→↓∞"
-      // ███████████████
+      // ϽЯ∆ꟿ ϽЯ∆Ш ꞆꞦѦꟿ ₡ƦȺШ ᴄᴚᴀᴡ - ϽЯᴧ₡₳∆ꞦꟿꭗףּɄШΔѦȺƦ
+      // ↕↔←↑→↓∞ ███████████████
 
-      ConsoleFrame frame = Engine.CreateFrame();
+      // Draw UI Outline
+      frame.InsertString(1, 1, "╔ᴄᴚᴀᴡ══════════════════════════════════════════╗", EConsolePixelColor.White);
+      frame.InsertString(1, 4, "╚══════════════════════════════════════════════╝", EConsolePixelColor.White);
+      frame.InsertString(19, 2, "<Z>: Undo | <U>: Redo", EConsolePixelColor.White);
+      frame.InsertString(19, 3, "<C>: Switch Color", EConsolePixelColor.White);
 
       frame[1, 2].Set('║', EConsolePixelColor.White);
+      frame[1, 3].Set('║', EConsolePixelColor.White);
+      frame[48, 2].Set('║', EConsolePixelColor.White);
+      frame[48, 3].Set('║', EConsolePixelColor.White);
 
-      List<Pixel> pixels = new List<Pixel>();
+      // Draw Color swatches
+      for (int i = 0; i < Enum.GetNames(typeof(EConsolePixelColor)).Length; i++)
+        frame[2 + i, 2].Set('█', (EConsolePixelColor)i);
 
-      pixels.AddRange(Pixel.FromString("╔ᴄᴚᴀᴡ══════════════════════════════════════════╗", 1, 1));
-      pixels.Add(new Pixel(1, 2, '║', 15));
+      // Draw Color Selector
+      frame[2 + (int)ActiveColor, 3].Set(SelectorChar, EConsolePixelColor.White);
 
-      for (int i = 0; i < 16; i++)
-        pixels.Add(new Pixel((short)(2 + i), 2, '█', (short)i));
-
-      pixels.AddRange(Pixel.FromString("                               ║", 17, 2));
-      pixels.AddRange(Pixel.FromString("╚══════════════════════════════════════════════╝", 1, 3));
-
-      return pixels;
+      // Draw Cursor
+      frame[CursorPos].Set(CursorChar, EConsolePixelColor.White);
     }
 
     public void Run()
@@ -84,11 +86,14 @@ namespace craw
               case ConsoleKey.UpArrow: MoveCursor(0, -1); break;
               case ConsoleKey.DownArrow: MoveCursor(0, 1); break;
               case ConsoleKey.Spacebar: CursorAction(); break;
+              case ConsoleKey.C: ChangeColor(); break;
+              case ConsoleKey.Z: UndoShape(); break;
+              case ConsoleKey.U: RedoShape(); break;
               default: break;
             }
           }
 
-          Draw();
+          Render();
         }
         catch (Exception e)
         {
@@ -107,7 +112,7 @@ namespace craw
     {
       if (ActiveShape != null)
       {
-        Recipes.Add(ActiveShape);
+        Shapes.Add(ActiveShape);
         ActiveShape = null;
       }
       else
@@ -116,51 +121,51 @@ namespace craw
       }
     }
 
-    private void Draw()
+    private void ChangeColor()
+    {
+      int currentColor = (int)ActiveColor;
+      currentColor += 1;
+      currentColor %= Enum.GetNames(typeof(EConsolePixelColor)).Length;
+      ActiveColor = (EConsolePixelColor)currentColor;
+    }
+
+    private void UndoShape()
+    {
+        if (Shapes.Count > 0) 
+        {
+            Shape s = Shapes[Shapes.Count - 1];
+            Shapes.Remove(s);
+            ShapeHistory.Add(s);
+        }
+    }
+
+    private void RedoShape()
+    {
+        if (ShapeHistory.Count > 0)
+        {
+            Shape s = ShapeHistory[ShapeHistory.Count - 1];
+            ShapeHistory.Remove(s);
+            Shapes.Add(s);  
+        }
+    }
+
+    private void Render()
     {
       ConsoleFrame frame = Engine.CreateFrame();
-      var uiLayer = new List<Pixel>();
-
-      uiLayer.AddRange(UI());
 
       // Fill frame buffer with Data from all Recipes - implicitly prioritizing the
       // higher indices
-      Recipes.ForEach(recipe =>
-      {
-        for (int i = 0; i < recipe.Pixels.Length; i++)
-        {
-          Pixel instruction = recipe.Pixels[i];
-          if (instruction != null)
-          {
-            frame[instruction.Coord].Set(instruction.Data.Character, instruction.Data.Color);
-          }
-        }
-      });
-
-      // Fill frame buffer with Data from UI Layer - prioritizing the UI Layer over the Data in 'Recipies'
-      uiLayer.ForEach(instruction =>
-      {
-        frame[instruction.Coord].Set(instruction.Data.Character, instruction.Data.Color);
-      });
+      Shapes.ForEach(recipe => recipe.Put(ref frame));
 
       // Fill frame buffer with Data from the Active shape
       if (ActiveShape != null)
       {
-        for (int i = 0; i < ActiveShape.Pixels.Length; i++)
-        {
-          Pixel instruction = ActiveShape.Pixels[i];
-          if (instruction != null)
-          {
-            frame[instruction.Coord].Set(instruction.Data.Character, instruction.Data.Color);
-          }
-        }
-
-        // Update Active Shape with current Cursor Position
-        ActiveShape.Make(CursorPos);
+        ActiveShape.Make(CursorPos, ActiveColor); // Update Active Shape with current Cursor Position
+        ActiveShape.Put(ref frame);
       }
 
-      // Draw Cursor
-      frame[CursorPos].Set(CursorChar, EConsolePixelColor.White);
+      // Fill frame buffer with Data from UI Layer
+      PutUI(ref frame);
 
       Engine.Write(frame);
     }
