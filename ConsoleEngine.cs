@@ -167,14 +167,34 @@ namespace ConsoleEngine
             Buf = new CharItem[Width * Height];
         }
 
-        public void InsertString(int x, int y, string s, EConsolePixelColor color = EConsolePixelColor.White)
+        /// <summary>
+        /// Inserts string <code>s</code>, beginning at position <code>x</code>, <code>y</code>.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="s"></param>
+        /// <param name="color"></param>
+        /// <param name="vertical">Toggle horizontal / vertical insertion</param>
+        public void InsertString(int x, int y, string s, EConsolePixelColor color = EConsolePixelColor.White, bool vertical = false)
         {
             char[] chars = s.ToCharArray();
 
-            for (int i = 0; i < chars.Length; i++)
+
+            if (vertical) 
             {
-                if (x + i >= Width) break; // Exit if overflow
-                this[x + i, y].Set(chars[i], color);
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    if (y + i >= Height) break; // Exit if overflow
+                    this[x, y + i].Set(chars[i], color);
+                }
+            }
+            else 
+            {
+                for (int i = 0; i < chars.Length; i++)
+                {
+                    if (x + i >= Width) break; // Exit if overflow
+                    this[x + i, y].Set(chars[i], color);
+                }
             }
         }
 
