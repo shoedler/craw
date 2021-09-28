@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
-using System.Threading;
 using ConsoleEngine;
 
 namespace craw
@@ -12,11 +12,25 @@ namespace craw
         private List<Shape> Shapes = new List<Shape>();
         private List<Shape> ShapeHistory = new List<Shape>();
         private Coord CursorPos;
-        private const char CursorChar = '◌'; //˟○◌⌂
-        private const char SelectorChar = '⌂'; //◊∆¯^⌂
         private Shape ActiveShape = null;
         private EConsolePixelColor ActiveColor = EConsolePixelColor.White;
+        private EShapeKind ActiveShapeKind = EShapeKind.Rectangle;
+        private float Fps = 0f;
+        private double FrameTimeMs = 0;
+        private bool ToggleGrid = false;
+        // Config Values
+        private const char CursorChar = '◌'; //˟○◌⌂
+        private const char SelectorChar = '⌂'; //◊∆¯^⌂
+        private const string UiTitle = "ᴄᴚᴀᴡ";
+        private const EConsolePixelColor UiColor = EConsolePixelColor.White;
 
+        // Combak
+        // Title alternatives: ϽЯ∆ꟿ ϽЯ∆Ш ꞆꞦѦꟿ ₡ƦȺШ ᴄᴚᴀᴡ - ϽЯᴧ₡₳∆ꞦꟿꭗףּɄШΔѦȺƦ
+        // Chars:              ↕↔←↑→↓∞ █
+        // TODO: Implement key [x] -> x, followed by numbers and then enter moves the cursor to the given x pos
+        // TODO: Implement key [y] -> y, followed by numbers and then enter moves the cursor to the given y pos
+        // TODO: Implement
+        
         public CrawController()
         {
             short width = (short)(150);
@@ -43,43 +57,119 @@ namespace craw
             }
         }
 
+        private void PutGrid(ref ConsoleFrame frame)
+        {
+            for (int x = 1; x < Engine.Width; x++) 
+            {
+                for (int y = 1; y < Engine.Height; y++)
+                {
+                    if (x % 2 == 0)
+                        frame[x, y].Set('─', EConsolePixelColor.Gray);
+                    else
+                        frame[x, y].Set('┼', EConsolePixelColor.Gray);
+                }
+            }
+        }
+
         private void PutUI(ref ConsoleFrame frame)
         {
-            // ϽЯ∆ꟿ ϽЯ∆Ш ꞆꞦѦꟿ ₡ƦȺШ ᴄᴚᴀᴡ - ϽЯᴧ₡₳∆ꞦꟿꭗףּɄШΔѦȺƦ
-            // ↕↔←↑→↓∞ ███████████████
+            int verticalHeight = 3;
+            int colorCount = Enum.GetNames(typeof(EConsolePixelColor)).Length;
+            int shapeKindCount = Enum.GetNames(typeof(EShapeKind)).Length;
 
-            // Draw UI Outline
-            frame.InsertString(1, 1, "╔ᴄᴚᴀᴡ════════════╤═════════════════════════════╗", EConsolePixelColor.White);
-            frame.InsertString(1, 5, "╚══════════════════════════════════════════════╝", EConsolePixelColor.White);
-            frame.InsertString(18, 2, "│ <Z>: Undo | <U>: Redo", EConsolePixelColor.White);
-            frame.InsertString(18, 3, "│ <C>: Switch Color", EConsolePixelColor.White);
-            frame.InsertString(18, 4, "│ <Space>: Begin / End Shape", EConsolePixelColor.White);
-            frame.InsertString(1, 4, "╟────────────────┘", EConsolePixelColor.White);
+            string horizontalBar = new string('═', Engine.Width - 3);
+            string verticalBar = new string('║', verticalHeight);
+            string verticalSpacer = '╤' + new string('│', verticalHeight) + '╧';
 
-            frame[1, 2].Set('║', EConsolePixelColor.White);
-            frame[1, 3].Set('║', EConsolePixelColor.White);
-            frame[1, 4].Set('║', EConsolePixelColor.White);
-            frame[48, 2].Set('║', EConsolePixelColor.White);
-            frame[48, 3].Set('║', EConsolePixelColor.White);
-            frame[48, 4].Set('╟', EConsolePixelColor.White);
+            // Draw main border
+            frame.InsertString(1, 1, '╔' + horizontalBar + '╗', UiColor);
+            frame.InsertString(1, verticalHeight + 2, '╚' + horizontalBar + '╝', UiColor);
+            frame.InsertString(1, 2, verticalBar, UiColor, true);
+            frame.InsertString(Engine.Width - 1, 2, verticalBar, UiColor, true);
+
+            frame.InsertString(2, 1, UiTitle, UiColor);
+
+            /*
+             * From here on, the vertical sections are drawn from left to right.
+             * `ySectionBegin` and `ySectionEnd` are incremented according to the width of the sections content
+             */
+            int ySectionBegin = 0;
+            int ySectionEnd = 0;
+
+            /*
+             * Color Section
+             */
+            ySectionBegin = 2;
+            ySectionEnd = ySectionBegin + colorCount + 2;
+
+            // Draw Section title, Spacer and selector
+            frame.InsertString(ySectionBegin, 2, "[C]olors", UiColor);
+            frame.InsertString(ySectionEnd - 1, 1, verticalSpacer, UiColor, true);
+            frame[ySectionBegin + (int)ActiveColor, 4].Set(SelectorChar, EConsolePixelColor.White);
 
             // Draw Color swatches
-            for (int i = 0; i < Enum.GetNames(typeof(EConsolePixelColor)).Length; i++)
-                frame[2 + i, 2].Set('█', (EConsolePixelColor)i);
+            for (int i = 0; i < colorCount; i++)
+                frame[ySectionBegin + i, 3].Set('█', (EConsolePixelColor)i);
 
-            // Draw Color Selector
-            frame[2 + (int)ActiveColor, 3].Set(SelectorChar, EConsolePixelColor.White);
+            /*
+             * Shape Section
+             */
+            ySectionBegin = ySectionEnd + 1;
+            ySectionEnd = ySectionBegin + 8 + 2; //TODO: Change '8' to shapeKindCount once there are enough implemented
+
+            // Draw Section title, Spacer and selector
+            frame.InsertString(ySectionBegin, 2, "[S]hapes", UiColor);
+            frame.InsertString(ySectionEnd - 1, 1, verticalSpacer, UiColor, true);
+            frame[ySectionBegin + (int)ActiveShapeKind, 4].Set(SelectorChar, EConsolePixelColor.White);
+            
+            // Draw Shape kinds
+            for (int i = 0; i < shapeKindCount; i++) 
+            {
+                char s = (i == (int)EShapeKind.Rectangle) ? '□' :
+                         (i == (int)EShapeKind.Triangle) ? '∆' :
+                         (i == (int)EShapeKind.Line) ? '-' : 
+                         (i == (int)EShapeKind.Circle) ? '○' :
+                         '?';
+                frame[ySectionBegin + i, 3].Set(s, UiColor);
+            }
+
+            /*
+             * Keymapping Section
+             */
+            ySectionBegin = ySectionEnd + 1;
+            ySectionEnd = ySectionBegin + 26 + 2;
+
+            // Draw text and spacer 
+            frame.InsertString(ySectionEnd - 1, 1, verticalSpacer, UiColor, true);
+            frame.InsertString(ySectionBegin, 2, "[Z]: Undo / [U]: Redo", UiColor);
+            frame.InsertString(ySectionBegin, 3, "[G]: Toggle grid");
+            frame.InsertString(ySectionBegin, 4, "[Space]: Begin / End Shape");
+
+            /* 
+             * Info Section
+             */
+            ySectionBegin = ySectionEnd + 1;
+            frame.InsertString(ySectionBegin, 2, "fps: " + Fps.ToString() , UiColor);
+            frame.InsertString(ySectionBegin, 3, "frametime [ms]: " + ((float)FrameTimeMs).ToString() , UiColor);
+
 
             // Draw Cursor
             frame[CursorPos].Set(CursorChar, EConsolePixelColor.White);
+            frame.InsertString(CursorPos.X + 1, CursorPos.Y + 1, CursorPos.X.ToString() + "/" + CursorPos.Y.ToString(), EConsolePixelColor.Gray);
         }
 
         public void Run()
         {
+            Stopwatch sw = new Stopwatch();
+            const int fpsFreqMs = 100; // Recalculate fps every `fpsFreqMs` miliseconds
+            double fpsAccumulator = 0d;
+
             while (ShouldRun)
             {
                 try
                 {
+                    sw.Restart();
+
                     if (Console.KeyAvailable)
                     {
                         var action = Console.ReadKey();
@@ -91,13 +181,24 @@ namespace craw
                             case ConsoleKey.DownArrow: MoveCursor(0, 1); break;
                             case ConsoleKey.Spacebar: CursorAction(); break;
                             case ConsoleKey.C: ChangeColor(); break;
+                            case ConsoleKey.S: ChangeShapeKind(); break;
                             case ConsoleKey.Z: UndoShape(); break;
                             case ConsoleKey.U: RedoShape(); break;
+                            case ConsoleKey.G: ToggleGrid = !ToggleGrid; break;
                             default: break;
                         }
                     }
 
                     Render();
+
+                    FrameTimeMs = sw.Elapsed.TotalMilliseconds;
+                    fpsAccumulator += FrameTimeMs;
+
+                    if (fpsAccumulator > fpsFreqMs) 
+                    {
+                        Fps = 1000 * (float) fpsAccumulator / (float) fpsFreqMs;
+                        fpsAccumulator = 0;
+                    }
                 }
                 catch (Exception e)
                 {
@@ -126,7 +227,11 @@ namespace craw
             }
             else
             {
-                ActiveShape = new Triangle(CursorPos);
+                ActiveShape = (ActiveShapeKind == EShapeKind.Triangle) ? new Triangle(CursorPos) :
+                              (ActiveShapeKind == EShapeKind.Rectangle) ? new Rectangle(CursorPos) :
+                              (ActiveShapeKind == EShapeKind.Circle) ? new Triangle(CursorPos) : // 😁
+                              (ActiveShapeKind == EShapeKind.Line) ? new Line(CursorPos) :
+                              new Rectangle(CursorPos);
             }
         }
 
@@ -136,6 +241,14 @@ namespace craw
             currentColor += 1;
             currentColor %= Enum.GetNames(typeof(EConsolePixelColor)).Length;
             ActiveColor = (EConsolePixelColor)currentColor;
+        }
+
+        private void ChangeShapeKind()
+        {
+            int currentShapeKind = (int)ActiveShapeKind;
+            currentShapeKind++;
+            currentShapeKind %= Enum.GetNames(typeof(EShapeKind)).Length;
+            ActiveShapeKind = (EShapeKind)currentShapeKind;
         }
 
         private void UndoShape()
@@ -161,6 +274,12 @@ namespace craw
         private void Render()
         {
             ConsoleFrame frame = Engine.CreateFrame();
+
+            // Draw the grid first, if it's toggled on
+            if (ToggleGrid)
+            {
+                PutGrid(ref frame);
+            }
 
             // Fill frame buffer with Data from all Recipes - implicitly prioritizing the
             // higher indices
