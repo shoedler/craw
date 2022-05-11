@@ -9,15 +9,19 @@ namespace craw
     {
         public ConsoleEngine.ConsoleEngine Engine;
         public bool ShouldRun = false;
-        private List<Shape> Shapes = new List<Shape>();
-        private List<Shape> ShapeHistory = new List<Shape>();
+
+        private readonly List<Shape> Shapes = new();
+        private readonly List<Shape> ShapeHistory = new();
+
         private Coord CursorPos;
         private Shape ActiveShape = null;
         private EConsolePixelColor ActiveColor = EConsolePixelColor.White;
         private EShapeKind ActiveShapeKind = EShapeKind.Rectangle;
+
         private float Fps = 0f;
         private double FrameTimeMs = 0;
         private bool ToggleGrid = false;
+
         // Config Values
         private const char CursorChar = '◌'; //˟○◌⌂
         private const char SelectorChar = '⌂'; //◊∆¯^⌂
@@ -33,8 +37,8 @@ namespace craw
         
         public CrawController()
         {
-            short width = (short)(150);
-            short height = (short)(50);
+            short width = 150;
+            short height = 50;
 
             CursorPos = new Coord((short)(width / 2), (short)(height / 2));
 
@@ -50,6 +54,7 @@ namespace craw
         {
             bool outsideXBounds = CursorPos.X + xOffset < 1 || CursorPos.X + xOffset > Engine.Width - 1;
             bool outsideYBounds = CursorPos.Y + yOffset < 1 || CursorPos.Y + yOffset > Engine.Height - 1;
+
             if (!outsideXBounds && !outsideYBounds)
             {
                 CursorPos.X += xOffset;
@@ -229,7 +234,7 @@ namespace craw
             {
                 ActiveShape = (ActiveShapeKind == EShapeKind.Triangle) ? new Triangle(CursorPos) :
                               (ActiveShapeKind == EShapeKind.Rectangle) ? new Rectangle(CursorPos) :
-                              (ActiveShapeKind == EShapeKind.Circle) ? new Triangle(CursorPos) : // 😁
+                              (ActiveShapeKind == EShapeKind.Circle) ? new Circle(CursorPos) : // 😁
                               (ActiveShapeKind == EShapeKind.Line) ? new Line(CursorPos) :
                               new Rectangle(CursorPos);
             }

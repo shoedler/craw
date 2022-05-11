@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using ConsoleEngine;
 
 namespace craw
@@ -66,8 +67,51 @@ namespace craw
         }
     }
 
-    class ShapeFunctions 
+    static class ShapeFunctions 
     {
+        public static char GetAngleChar(double angle)
+        {
+            if (angle > 180)
+                angle -= 180;
+
+            const double inc = 22.5;
+            if (angle >=  inc && angle <=  90 - inc || angle < -135 + inc && angle > -180 + inc)      return '╲';
+            if (angle <= -inc && angle >= -90 + inc || angle >= 135 - inc && angle <= 180 - inc)      return '╱';
+            if (angle >= 90 - inc && angle <= 135 - inc || angle <= -90 + inc && angle >= -135 + inc) return '│';
+            return '─';
+        }
+
+        public static Pixel[] Circle(Coord center, Coord perim, EConsolePixelColor color)
+        {
+            int dist = (int)Math.Ceiling(center.DistanceTo(perim));
+
+            List<Pixel> pixels = new();
+
+            if (dist < 2)
+                return pixels.ToArray();
+
+            double iIncrement = dist < 5 ? 0.3d : 0.1d;
+            
+            int x0 = center.X;
+            int y0 = center.Y;
+
+            for (double i = 0.0d; i < Math.PI * 2; i += iIncrement)
+            {
+                int x1 = (int)(x0 + dist * Math.Cos(i));
+
+                // Use twice the x value since the cells are 2:1
+                x1 += x1;
+                x1 -= x0;
+
+                int y1 = (int)(y0 + dist * Math.Sin(i));
+
+                pixels.Add(new((short)x1, (short)y1, GetAngleChar(i * 180 / Math.PI), (short)color));
+            }
+
+            return pixels.ToArray();
+        }
+
+
         public static Pixel[] Line(Coord A, Coord B, EConsolePixelColor color)
         {
             int dist = (int)Math.Ceiling(A.DistanceTo(B));
@@ -81,11 +125,7 @@ namespace craw
             int y0 = A.Y; int y1 = B.Y;
 
             double angle = A.AngleTo(B);
-
-            char line = '─';
-            if (angle >=  22.5 && angle <=  67.5 || angle < -112.5 && angle >  -157.5) line = '╲';
-            if (angle >=  67.5 && angle <= 112.5 || angle <= -67.5 && angle >= -112.5) line = '│';
-            if (angle <= -22.5 && angle >= -67.5 || angle >= 112.5 && angle <=  157.5) line = '╱';
+            char line = GetAngleChar(angle);
 
             // https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
             int dx =  Math.Abs(x1 - x0);

@@ -202,19 +202,15 @@ namespace ConsoleEngine
         /// Array Indexer for Cartesian Coordinates
         /// </summary>
         /// <value>Returns a reference to a CharItem</value>
-        public ref CharItem this[int x, int y]
-        {
-            get { return ref Buf[(x - 1) + Width * (y - 1)]; }
-        }
+        public ref CharItem this[int x, int y] => ref Buf[(x - 1) + Width * (y - 1)]; 
+        
 
         /// <summary>
         /// Array Indexer for <code>Coord</code> structures
         /// </summary>
         /// <value>Returns a reference to a CharItem</value>
-        public ref CharItem this[Coord coord]
-        {
-            get { return ref Buf[((short)coord.Y - 1) * Width + ((short)coord.X - 1)]; }
-        }
+        public ref CharItem this[Coord coord] => ref Buf[((short)coord.Y - 1) * Width + ((short)coord.X - 1)]; 
+        
     }
 
     /// <summary>
@@ -271,7 +267,7 @@ namespace ConsoleEngine
             if (Handle.IsInvalid)
                 throw new Exception("Invalid Handle to $CONOUT - is a console instance running?");
 
-            Region = new WriteRegion()
+            Region = new()
             {
                 Left = 0,
                 Top = 0,
@@ -284,10 +280,8 @@ namespace ConsoleEngine
         /// Creates a new <code>ConsoleFrame</code> with the Console Engines Width / Height Dimensions
         /// </summary>
         /// <returns>A new ConsoleFrame</returns>
-        public ConsoleFrame CreateFrame()
-        {
-            return new ConsoleFrame(Width, Height);
-        }
+        public ConsoleFrame CreateFrame() => new(Width, Height);
+        
 
         /// <summary>
         /// Writes a <code>ConsoleFrame</code> to the Console
